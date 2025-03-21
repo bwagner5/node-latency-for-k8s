@@ -27,7 +27,7 @@ Usage for node-latency-for-k8s:
    --no-imds
       Do not use EC2 Instance Metadata Service (IMDS), default: false
    --node-name
-      ndoe name to query for the first pod creation time in the pod namespace, default: <auto-discovered via IMDS>
+      node name to query for the first pod creation time in the pod namespace, default: <auto-discovered via IMDS>
    --output
       output type (markdown or json), default: markdown
    --pod-namespace
@@ -47,18 +47,23 @@ Usage for node-latency-for-k8s:
 ### K8s DaemonSet (Helm)
 
 ```
-curl -Lo 01-create-iam-policy.sh https://raw.githubusercontent.com/awslabs/node-latency-for-k8s/v0.1.8/scripts/01-create-iam-policy.sh
-curl -Lo 02-create-service-account.sh https://raw.githubusercontent.com/awslabs/node-latency-for-k8s/v0.1.8/scripts/02-create-service-account.sh
-chmod +x 01-create-iam-policy.sh 02-create-service-account.sh
-./01-create-iam-policy.sh && ./02-create-service-account.sh
 export CLUSTER_NAME=<Fill in CLUSTER_NAME here>
-export VERSION="v0.1.8"
+export VERSION="v0.1.10"
+
+SCRIPTS_PATH="https://raw.githubusercontent.com/awslabs/node-latency-for-k8s/${VERSION}/scripts"
+TEMP_DIR=$(mktemp -d)
+curl -Lo ${TEMP_DIR}/01-create-iam-policy.sh ${SCRIPTS_PATH}/01-create-iam-policy.sh
+curl -Lo ${TEMP_DIR}/02-create-service-account.sh ${SCRIPTS_PATH}/02-create-service-account.sh
+curl -Lo ${TEMP_DIR}/cloudformation.yaml ${SCRIPTS_PATH}/cloudformation.yaml
+chmod +x ${TEMP_DIR}/01-create-iam-policy.sh ${TEMP_DIR}/02-create-service-account.sh
+${TEMP_DIR}/01-create-iam-policy.sh && ${TEMP_DIR}/02-create-service-account.sh
 
 export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 export KNL_IAM_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${CLUSTER_NAME}-node-latency-for-k8s"
 
 docker logout public.ecr.aws
 helm upgrade --install node-latency-for-k8s oci://public.ecr.aws/g4k0u1s2/node-latency-for-k8s-chart \
+   --create-namespace \
    --version ${VERSION} \
    --namespace node-latency-for-k8s \
    --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=${KNL_IAM_ROLE_ARN} \
@@ -73,15 +78,15 @@ Debian / Ubuntu:
 
 ```
 [[ `uname -m` == "aarch64" ]] && ARCH="arm64" || ARCH="amd64"
-wget https://github.com/awslabs/node-latency-for-k8s/releases/download/v0.1.8/node-latency-for-k8s_0.1.8_linux_${ARCH}.deb
-dpkg --install node-latency-for-k8s_0.1.8_linux_${ARCH}.deb
+wget https://github.com/awslabs/node-latency-for-k8s/releases/download/v0.1.10/node-latency-for-k8s_0.1.10_linux_${ARCH}.deb
+dpkg --install node-latency-for-k8s_0.1.10_linux_${ARCH}.deb
 ```
 
 RedHat:
 
 ```
 [[ `uname -m` == "aarch64" ]] && ARCH="arm64" || ARCH="amd64"
-rpm -i https://github.com/awslabs/node-latency-for-k8s/releases/download/v0.1.8/node-latency-for-k8s_0.1.8_linux_${ARCH}.rpm
+rpm -i https://github.com/awslabs/node-latency-for-k8s/releases/download/v0.1.10/node-latency-for-k8s_0.1.10_linux_${ARCH}.rpm
 ```
 
 Download Binary Directly:
@@ -89,7 +94,7 @@ Download Binary Directly:
 ```
 [[ `uname -m` == "aarch64" ]] && ARCH="arm64" || ARCH="amd64"
 OS=`uname | tr '[:upper:]' '[:lower:]'`
-wget -qO- https://github.com/awslabs/node-latency-for-k8s/releases/download/v0.1.8/node-latency-for-k8s_0.1.8_${OS}_${ARCH}.tar.gz | tar xvz
+wget -qO- https://github.com/awslabs/node-latency-for-k8s/releases/download/v0.1.10/node-latency-for-k8s_0.1.10_${OS}_${ARCH}.tar.gz | tar xvz
 chmod +x node-latency-for-k8s
 ```
 
